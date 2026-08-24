@@ -121,7 +121,7 @@ button.btn:disabled{opacity:.4;cursor:not-allowed;}
   position:relative;aspect-ratio:1/1;display:grid;place-items:center;
   border:1px solid #d8d8d8;border-radius:6px;padding:6px;
 }
-.card-tile .marker-svg{width:62%;height:62%;}
+.card-tile .marker-svg{width:80%;height:80%;}
 .card-tile .lbl{
   position:absolute;font-family:var(--mono);font-weight:700;font-size:13px;color:#111;
 }
@@ -202,7 +202,7 @@ footer.foot{margin-top:30px;color:var(--muted-2);font-size:12px;text-align:cente
 @media print{
   body *{visibility:hidden;}
   .sheet, .sheet *{visibility:visible;}
-  .sheet{position:absolute;top:0;left:0;width:100%;grid-template-columns:repeat(3,1fr);}
+  .sheet{position:absolute;top:0;left:0;width:100%;grid-template-columns:repeat(var(--print-cols, 2),1fr);}
   .card-tile{border:1px dashed #999;break-inside:avoid;}
 }
 
@@ -240,6 +240,14 @@ Léa
         <div>
           <label class="field-label" for="cardCount">Ou nombre de cartes (si pas de liste)</label>
           <input type="number" id="cardCount" value="10" min="1" max="250" style="width:120px">
+        </div>
+        <div>
+          <label class="field-label" for="colsSelect">Cartes par rangée (impression)</label>
+          <select id="colsSelect" style="background:var(--panel-2);border:1px solid var(--line-strong);color:var(--text);border-radius:8px;padding:10px 12px;font-family:var(--sans);font-size:14px">
+            <option value="2" selected>2 — grandes cartes, meilleure portée</option>
+            <option value="3">3 — format standard</option>
+            <option value="4">4 — compact, portée réduite</option>
+          </select>
         </div>
         <button class="btn primary" id="btnGenerate" style="margin-top:20px">Générer les cartes</button>
         <button class="btn" id="btnPrint" style="margin-top:20px">🖨 Imprimer</button>
@@ -305,7 +313,6 @@ Léa
 
 
 <!-- Librairie js-aruco2 (MIT) — https://github.com/damianofalcioni/js-aruco2 -->
-<!-- Inlinée pour que la page fonctionne hors-ligne une fois chargée. -->
 <script>
 /*
 Copyright (c) 2011 Juan Mellado
@@ -1518,7 +1525,6 @@ AR.Detector.prototype.rotate2 = function (src, rotation) {
 
 </script>
 
-<!-- Logique de l'application -->
 <script>
 (function(){
   "use strict";
@@ -1558,6 +1564,7 @@ AR.Detector.prototype.rotate2 = function (src, rotation) {
   // ================= CARTES =================
   var namesInput = $('#namesInput');
   var cardCountInput = $('#cardCount');
+  var colsSelect = $('#colsSelect');
   var sheetEl = $('#sheet');
   var rosterWarning = $('#rosterWarning');
   var maxCodes = dict.codeList.length;
@@ -1582,6 +1589,7 @@ AR.Detector.prototype.rotate2 = function (src, rotation) {
   }
 
   function renderSheet(){
+    sheetEl.style.setProperty('--print-cols', colsSelect.value);
     sheetEl.innerHTML = '';
     roster.forEach(function(item){
       var tile = document.createElement('div');
@@ -1673,7 +1681,7 @@ AR.Detector.prototype.rotate2 = function (src, rotation) {
       return video.play();
     }).then(function(){
       var vw = video.videoWidth || 1280, vh = video.videoHeight || 960;
-      var targetW = 640;
+      var targetW = 960; // plus haut = meilleure portée de détection, un peu plus lent (voir ms/scan à l'écran)
       canvas.width = targetW;
       canvas.height = Math.round(targetW * (vh/vw));
       detector = new AR.Detector({dictionaryName: DICT_NAME, maxHammingDistance: 6});
@@ -1698,11 +1706,24 @@ AR.Detector.prototype.rotate2 = function (src, rotation) {
     $('#btnStartCam').classList.remove('danger');
   }
 
+  // Angle (degrés) du coin de référence (corners[0]) par rapport au centroïde du marqueur,
+  // pour l'orientation "telle qu'imprimée" (aucune rotation physique). Valeur déterminée
+  // empiriquement à partir du comportement propre de js-aruco2 (indépendante de la caméra/appareil).
+  // Utiliser le centroïde + un seul coin de référence rend le calcul insensible à l'ordre
+  // (horaire/antihoraire) dans lequel la librairie retourne les 4 coins — contrairement à un
+  // calcul basé sur un simple vecteur entre deux coins consécutifs, qui peut donner une lettre
+  // opposée selon des conditions de prise de vue réelles (angle, perspective).
+  var REF_ANGLE = 225;
+
   function letterForCorners(corners){
-    var p0 = corners[0], p1 = corners[1];
-    var angle = Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI;
+    var cx = 0, cy = 0;
+    for(var i=0;i<4;i++){ cx += corners[i].x; cy += corners[i].y; }
+    cx/=4; cy/=4;
+    var p0 = corners[0];
+    var angle = Math.atan2(p0.y - cy, p0.x - cx) * 180 / Math.PI;
     if(angle < 0) angle += 360;
-    var quadrant = Math.round(angle/90) % 4;
+    var rel = (angle - REF_ANGLE + 360) % 360;
+    var quadrant = Math.round(rel/90) % 4;
     var idx = (quadrant + calibOffset) % 4;
     return {letter: LETTERS[idx], quadrant: quadrant};
   }
