@@ -121,16 +121,16 @@ button.btn:disabled{opacity:.4;cursor:not-allowed;}
   position:relative;aspect-ratio:1/1;display:grid;place-items:center;
   border:1px solid #d8d8d8;border-radius:6px;padding:6px;
 }
-.card-tile .marker-svg{width:80%;height:80%;}
+.card-tile .marker-svg{width:90%;height:90%;}
 .card-tile .lbl{
   position:absolute;font-family:var(--mono);font-weight:700;font-size:13px;color:#111;
 }
-.card-tile .lbl.N{top:4px;left:50%;transform:translateX(-50%);}
-.card-tile .lbl.E{right:4px;top:50%;transform:translateY(-50%);}
-.card-tile .lbl.S{bottom:4px;left:50%;transform:translateX(-50%);}
-.card-tile .lbl.W{left:4px;top:50%;transform:translateY(-50%);}
+.card-tile .lbl.N{top:4px;left:50%;transform:translateX(-50%) rotate(0deg);}
+.card-tile .lbl.E{right:4px;top:50%;transform:translateY(-50%) rotate(90deg);}
+.card-tile .lbl.S{bottom:4px;left:50%;transform:translateX(-50%) rotate(180deg);}
+.card-tile .lbl.W{left:4px;top:50%;transform:translateY(-50%) rotate(-90deg);}
 .card-tile .idtag{
-  position:absolute;bottom:4px;right:6px;font-family:var(--mono);font-size:8px;color:#999;
+  position:absolute;bottom:3px;right:5px;font-family:var(--mono);font-size:15px;font-weight:700;color:#111;
 }
 .card-tile .name{
   position:absolute;top:4px;left:6px;font-family:var(--sans);font-size:8px;color:#999;
