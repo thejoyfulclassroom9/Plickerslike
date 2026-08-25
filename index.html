@@ -312,7 +312,6 @@ Léa
 </div>
 
 
-<!-- Librairie js-aruco2 (MIT) — https://github.com/damianofalcioni/js-aruco2 -->
 <script>
 /*
 Copyright (c) 2011 Juan Mellado
@@ -1725,7 +1724,7 @@ AR.Detector.prototype.rotate2 = function (src, rotation) {
     var rel = (angle - REF_ANGLE + 360) % 360;
     var quadrant = Math.round(rel/90) % 4;
     var idx = (quadrant + calibOffset) % 4;
-    return {letter: LETTERS[idx], quadrant: quadrant};
+    return {letter: LETTERS[idx], quadrant: quadrant, rawAngle: Math.round(angle)};
   }
 
   var COLORS = {A:'#e8a33d', B:'#4fb6a6', C:'#d9707a', D:'#7b93d9'};
@@ -1779,15 +1778,22 @@ AR.Detector.prototype.rotate2 = function (src, rotation) {
     var cx = (c[0].x + c[1].x + c[2].x + c[3].x)/4;
     var cy = (c[0].y + c[1].y + c[2].y + c[3].y)/4;
     var label = '#' + marker.id + '  ' + r.letter;
+    var subLabel = r.rawAngle + '°';
     ctx.font = '700 15px ' + getComputedStyle(document.body).fontFamily;
     var padX = 6, padY = 4;
     var tw = ctx.measureText(label).width;
+    ctx.font = '600 11px ' + getComputedStyle(document.body).fontFamily;
+    var stw = ctx.measureText(subLabel).width;
+    var boxW = Math.max(tw, stw) + padX*2;
     ctx.fillStyle = color;
-    ctx.fillRect(cx - tw/2 - padX, cy - 10 - padY, tw + padX*2, 20 + padY);
+    ctx.fillRect(cx - boxW/2, cy - 22 - padY, boxW, 40 + padY);
     ctx.fillStyle = '#0d0d0d';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(label, cx, cy);
+    ctx.font = '700 15px ' + getComputedStyle(document.body).fontFamily;
+    ctx.fillText(label, cx, cy - 8);
+    ctx.font = '600 11px ' + getComputedStyle(document.body).fontFamily;
+    ctx.fillText(subLabel, cx, cy + 10);
     ctx.textAlign = 'start';
   }
 
