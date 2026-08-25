@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test de jumelage — Ordinateur</title>
+<style>
+:root{
+  --bg:#10161a; --panel:#171f24; --panel-2:#1d262c;
+  --line:rgba(237,234,227,0.09); --line-strong:rgba(237,234,227,0.16);
+  --text:#edeae3; --muted:#8b969c; --muted-2:#5f6a70;
+  --amber:#e8a33d; --green:#4fb6a6; --red:#d9707a;
+  --mono: ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Menlo,Consolas,monospace;
+  --sans: ui-sans-serif,"Avenir Next","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:radial-gradient(1200px 600px at 15% -10%,rgba(232,163,61,.06),transparent 60%),var(--bg);
+  color:var(--text);font-family:var(--sans);min-height:100vh;-webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:860px;margin:0 auto;padding:24px 18px 64px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin:0 0 6px}
+h1{font-size:25px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+.sub{color:var(--muted);font-size:14px;line-height:1.55;max-width:56ch;margin:0 0 24px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;margin-bottom:16px}
+.panel h2{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 14px;font-family:var(--mono);font-weight:600}
+
+.code-row{display:flex;gap:26px;align-items:center;flex-wrap:wrap}
+.code{font-family:var(--mono);font-size:64px;font-weight:700;letter-spacing:.14em;color:var(--amber);line-height:1;font-variant-numeric:tabular-nums}
+.code.waiting{color:var(--muted-2);letter-spacing:.08em;font-size:40px}
+.code-note{color:var(--muted);font-size:13.5px;line-height:1.5;max-width:30ch}
+
+.state{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:12.5px;letter-spacing:.04em;margin-bottom:16px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted-2);flex-shrink:0}
+.dot.wait{background:var(--amber);animation:pulse 1.4s infinite}
+.dot.ok{background:var(--green)}
+.dot.err{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+.counter{font-family:var(--mono);font-size:110px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;color:var(--text);transition:color .12s}
+.counter.hit{color:var(--green)}
+.counter-label{font-family:var(--mono);font-size:12px;color:var(--muted-2);letter-spacing:.08em;text-transform:uppercase;margin-top:8px}
+
+.diag{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.diag-item{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.diag-item .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted-2);margin-bottom:6px}
+.diag-item .v{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--text)}
+.diag-item .v.good{color:var(--green)}
+.diag-item .v.warn{color:var(--amber)}
+
+.verdict{border-radius:8px;padding:14px 16px;font-size:14px;line-height:1.55;margin-top:14px;display:none}
+.verdict.good{display:block;background:rgba(79,182,166,.08);border:1px solid rgba(79,182,166,.35)}
+.verdict.bad{display:block;background:rgba(217,112,122,.08);border:1px solid rgba(217,112,122,.35)}
+.verdict b{color:var(--text)}
+
+button.btn{appearance:none;border:1px solid var(--line-strong);background:var(--panel-2);color:var(--text);
+  font-family:var(--sans);font-weight:600;font-size:13.5px;padding:10px 16px;border-radius:8px;cursor:pointer;
+  transition:transform .1s,border-color .15s}
+button.btn:hover{border-color:rgba(232,163,61,.5)}
+button.btn:active{transform:scale(.97)}
+button.btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+.log{font-family:var(--mono);font-size:11.5px;line-height:1.75;color:var(--muted);max-height:190px;overflow-y:auto;
+  background:#0c1013;border:1px solid var(--line);border-radius:8px;padding:12px 14px;white-space:pre-wrap}
+.log .t{color:var(--muted-2)}
+footer{margin-top:28px;color:var(--muted-2);font-size:12px;text-align:center;line-height:1.6}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Test de faisabilité · 1 sur 1</p>
+  <h1>Jumelage téléphone → ordinateur</h1>
+  <p class="sub">Cette page attend une connexion depuis ton téléphone. Ouvre <b>test-cell.html</b> sur ton Android, entre le code affiché ci-dessous, puis appuie sur le gros bouton. Si le compteur bouge ici, le réseau de l'école laisse passer et on peut bâtir la vraie application dessus.</p>
+
+  <div class="panel">
+    <h2>Code de session</h2>
+    <div class="code-row">
+      <div class="code waiting" id="code">····</div>
+      <p class="code-note" id="codeNote">Connexion au service de jumelage…</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Signal reçu du téléphone</h2>
+    <div class="state"><span class="dot" id="dot"></span><span id="stateTxt">EN ATTENTE DU CODE</span></div>
+    <div class="counter" id="counter">0</div>
+    <div class="counter-label">appuis reçus</div>
+  </div>
+
+  <div class="panel">
+    <h2>Diagnostic réseau</h2>
+    <div class="diag">
+      <div class="diag-item"><div class="k">Latence aller-retour</div><div class="v" id="dLat">—</div></div>
+      <div class="diag-item"><div class="k">Chemin utilisé</div><div class="v" id="dPath">—</div></div>
+      <div class="diag-item"><div class="k">Appuis perdus</div><div class="v" id="dLost">—</div></div>
+    </div>
+    <div class="verdict" id="verdict"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Journal</h2>
+    <div class="log" id="log"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" id="btnNew">Générer un nouveau code</button>
+      <button class="btn" id="btnReset">Remettre le compteur à zéro</button>
+    </div>
+  </div>
+
+  <footer>Test jetable — sera supprimé une fois la vraie application construite.<br>Aucune donnée n'est enregistrée, aucun compte requis.</footer>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var PREFIX = 'plickerslike-test-';
+  var peer = null, conn = null, code = null;
+  var count = 0, expectedSeq = 0, lost = 0, statsTimer = null;
+
+  var $ = function(id){ return document.getElementById(id); };
+
+  function log(msg){
+    var el = $('log');
+    var t = new Date().toLocaleTimeString('fr-CA', {hour12:false});
+    el.textContent += (el.textContent ? '\n' : '') + t + '  ' + msg;
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function setState(kind, txt){
+    $('dot').className = 'dot ' + kind;
+    $('stateTxt').textContent = txt;
+  }
+
+  function makeCode(){
+    return String(Math.floor(1000 + Math.random() * 9000));
+  }
+
+  function start(){
+    if(peer){ try{ peer.destroy(); }catch(e){} }
+    conn = null;
+    code = makeCode();
+    $('code').textContent = '····';
+    $('code').className = 'code waiting';
+    $('codeNote').textContent = 'Connexion au service de jumelage…';
+    setState('', 'CONNEXION AU SERVICE…');
+    $('verdict').className = 'verdict';
+    $('dLat').textContent = '—'; $('dLat').className = 'v';
+    $('dPath').textContent = '—'; $('dPath').className = 'v';
+    $('dLost').textContent = '—'; $('dLost').className = 'v';
+
+    peer = new Peer(PREFIX + code, {debug: 1});
+
+    peer.on('open', function(){
+      $('code').textContent = code;
+      $('code').className = 'code';
+      $('codeNote').textContent = 'Entre ce code sur le téléphone. Il change à chaque fois que tu recharges la page.';
+      setState('wait', 'EN ATTENTE DU TÉLÉPHONE');
+      log('Prêt. Code ' + code + '.');
+    });
+
+    peer.on('connection', function(c){
+      if(conn && conn.open){
+        log('Une deuxième connexion a été refusée (une seule à la fois).');
+        c.close();
+        return;
+      }
+      conn = c;
+      bind(c);
+    });
+
+    peer.on('error', function(err){
+      if(err.type === 'unavailable-id'){
+        log('Code ' + code + ' déjà pris, nouvel essai.');
+        start();
+        return;
+      }
+      setState('err', 'ERREUR — ' + err.type.toUpperCase());
+      log('Erreur : ' + err.type + ' — ' + (err.message || ''));
+      if(err.type === 'network' || err.type === 'server-error' || err.type === 'socket-error'){
+        showVerdict(false, 'Le service de jumelage est injoignable. Le réseau bloque probablement la connexion, ou le service public est temporairement en panne. Réessaie sur un autre réseau (ton partage de connexion cellulaire, par exemple) pour distinguer les deux cas.');
+      }
+    });
+
+    peer.on('disconnected', function(){
+      log('Déconnecté du service de jumelage, tentative de reprise…');
+      try{ peer.reconnect(); }catch(e){}
+    });
+  }
+
+  function bind(c){
+    c.on('open', function(){
+      setState('ok', 'TÉLÉPHONE CONNECTÉ');
+      log('Téléphone connecté.');
+      expectedSeq = 0; lost = 0;
+      $('dLost').textContent = '0';
+      $('dLost').className = 'v good';
+      if(statsTimer) clearInterval(statsTimer);
+      readPath(c);
+      statsTimer = setInterval(function(){ readPath(c); }, 4000);
+    });
+
+    c.on('data', function(d){
+      if(!d || !d.t) return;
+      if(d.t === 'ping'){
+        c.send({t:'pong', ts:d.ts});
+        return;
+      }
+      if(d.t === 'inc'){
+        if(typeof d.seq === 'number'){
+          if(d.seq > expectedSeq) lost += d.seq - expectedSeq;
+          expectedSeq = d.seq + 1;
+          $('dLost').textContent = String(lost);
+          $('dLost').className = 'v ' + (lost === 0 ? 'good' : 'warn');
+        }
+        count++;
+        var el = $('counter');
+        el.textContent = count;
+        el.classList.add('hit');
+        setTimeout(function(){ el.classList.remove('hit'); }, 140);
+        c.send({t:'ack', n:count, ts:d.ts});
+      }
+    });
+
+    c.on('close', function(){
+      setState('wait', 'TÉLÉPHONE DÉCONNECTÉ');
+      log('Téléphone déconnecté.');
+      if(statsTimer){ clearInterval(statsTimer); statsTimer = null; }
+    });
+
+    c.on('error', function(e){ log('Erreur de connexion : ' + e); });
+  }
+
+  function readPath(c){
+    var pc = c.peerConnection;
+    if(!pc || !pc.getStats) return;
+    pc.getStats(null).then(function(stats){
+      var pair = null;
+      stats.forEach(function(r){
+        if(r.type === 'candidate-pair' && r.state === 'succeeded' && (r.nominated || r.selected)) pair = r;
+      });
+      if(!pair){
+        stats.forEach(function(r){
+          if(r.type === 'candidate-pair' && r.state === 'succeeded' && !pair) pair = r;
+        });
+      }
+      if(!pair) return;
+
+      if(typeof pair.currentRoundTripTime === 'number'){
+        var ms = Math.round(pair.currentRoundTripTime * 1000);
+        $('dLat').textContent = ms + ' ms';
+        $('dLat').className = 'v ' + (ms < 120 ? 'good' : 'warn');
+      }
+
+      var local = stats.get(pair.localCandidateId);
+      var remote = stats.get(pair.remoteCandidateId);
+      var lt = local ? local.candidateType : null;
+      var rt = remote ? remote.candidateType : null;
+      var label, good = true, note;
+
+      if(lt === 'host' && rt === 'host'){
+        label = 'Direct (même wifi)';
+        note = 'Les deux appareils se parlent directement sur le réseau local. C\'est le meilleur cas : rapide, et ça ne dépend d\'aucun serveur externe pendant le questionnaire.';
+      } else if(lt === 'relay' || rt === 'relay'){
+        label = 'Relais externe';
+        good = false;
+        note = 'La connexion passe par un serveur relais externe. Ça fonctionne, mais ça dépend d\'un service tiers gratuit qui peut être lent ou tomber. On devrait prévoir une solution de rechange.';
+      } else {
+        label = 'Via internet (STUN)';
+        note = 'La connexion sort sur internet puis revient. Ça fonctionne bien, mais si tu peux mettre le téléphone et l\'ordinateur sur le même réseau wifi, ce sera encore plus solide.';
+      }
+      $('dPath').textContent = label;
+      $('dPath').className = 'v ' + (good ? 'good' : 'warn');
+      showVerdict(good, note);
+    }).catch(function(){});
+  }
+
+  function showVerdict(good, txt){
+    var v = $('verdict');
+    v.className = 'verdict ' + (good ? 'good' : 'bad');
+    v.innerHTML = (good ? '<b>Le réseau laisse passer.</b> ' : '<b>Attention.</b> ') + txt;
+  }
+
+  $('btnNew').addEventListener('click', function(){ count = 0; $('counter').textContent = '0'; start(); });
+  $('btnReset').addEventListener('click', function(){
+    count = 0; expectedSeq = 0; lost = 0;
+    $('counter').textContent = '0';
+    $('dLost').textContent = '0';
+    if(conn && conn.open) conn.send({t:'reset'});
+  });
+
+  start();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#10161a">
+<title>Test de jumelage — Téléphone</title>
+<style>
+:root{
+  --bg:#10161a; --panel:#171f24; --panel-2:#1d262c;
+  --line:rgba(237,234,227,0.09); --line-strong:rgba(237,234,227,0.16);
+  --text:#edeae3; --muted:#8b969c; --muted-2:#5f6a70;
+  --amber:#e8a33d; --green:#4fb6a6; --red:#d9707a;
+  --mono: ui-monospace,"Roboto Mono",Menlo,Consolas,monospace;
+  --sans: ui-sans-serif,"Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%}
+body{
+  background:radial-gradient(700px 420px at 50% -10%,rgba(232,163,61,.07),transparent 62%),var(--bg);
+  color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;
+  min-height:100dvh;display:flex;flex-direction:column;
+  padding:max(18px,env(safe-area-inset-top)) 18px max(18px,env(safe-area-inset-bottom));
+}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin:0 0 6px}
+h1{font-size:21px;font-weight:700;letter-spacing:-.02em;margin:0 0 8px}
+.sub{color:var(--muted);font-size:14px;line-height:1.55;margin:0}
+
+.screen{display:none;flex:1;flex-direction:column}
+.screen.active{display:flex}
+
+/* --- écran 1 : jumelage --- */
+#pair{justify-content:center;gap:22px}
+label.lbl{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-2);margin-bottom:10px}
+input#codeIn{
+  width:100%;background:var(--panel-2);border:1px solid var(--line-strong);color:var(--text);
+  border-radius:12px;padding:18px 12px;font-family:var(--mono);font-size:42px;font-weight:700;
+  text-align:center;letter-spacing:.22em;
+}
+input#codeIn:focus{outline:2px solid var(--amber);outline-offset:2px}
+button.go{
+  width:100%;appearance:none;border:none;background:var(--amber);color:#1a1305;
+  font-family:var(--sans);font-weight:700;font-size:17px;padding:18px;border-radius:12px;cursor:pointer;
+  transition:transform .1s,opacity .15s;
+}
+button.go:active{transform:scale(.98)}
+button.go:disabled{opacity:.4}
+.msg{font-family:var(--mono);font-size:12.5px;line-height:1.65;color:var(--muted);text-align:center;min-height:3em}
+.msg.err{color:var(--red)}
+.msg.ok{color:var(--green)}
+
+/* --- écran 2 : bouton --- */
+#tap{gap:16px}
+.bar{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;color:var(--muted)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--green);flex-shrink:0}
+.dot.off{background:var(--red)}
+button.big{
+  flex:1;width:100%;appearance:none;border:2px solid var(--amber);border-radius:20px;
+  background:linear-gradient(180deg,rgba(232,163,61,.16),rgba(232,163,61,.06));
+  color:var(--amber);font-family:var(--sans);font-weight:700;font-size:30px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  transition:transform .07s,background .12s;
+}
+button.big:active{transform:scale(.985);background:rgba(232,163,61,.3)}
+button.big .n{font-family:var(--mono);font-size:76px;line-height:1;font-variant-numeric:tabular-nums}
+button.big .cap{font-size:14px;font-weight:600;letter-spacing:.04em;color:var(--muted)}
+.feedback{font-family:var(--mono);font-size:12.5px;text-align:center;color:var(--muted-2);min-height:1.4em}
+.feedback b{color:var(--green)}
+button.quit{
+  appearance:none;background:transparent;border:1px solid var(--line-strong);color:var(--muted);
+  font-family:var(--sans);font-size:13.5px;font-weight:600;padding:12px;border-radius:10px;cursor:pointer;
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<section class="screen active" id="pair">
+  <div>
+    <p class="eyebrow">Test de faisabilité</p>
+    <h1>Jumeler au tableau</h1>
+    <p class="sub">Entre le code affiché sur l'écran de l'ordinateur.</p>
+  </div>
+  <div>
+    <label class="lbl" for="codeIn">Code à 4 chiffres</label>
+    <input id="codeIn" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="0000" autocomplete="off">
+  </div>
+  <button class="go" id="btnGo">Se connecter</button>
+  <p class="msg" id="msg"></p>
+</section>
+
+<section class="screen" id="tap">
+  <div class="bar"><span class="dot" id="dot"></span><span id="barTxt">CONNECTÉ · <span id="codeEcho"></span></span></div>
+  <button class="big" id="btnTap">
+    <span class="n" id="myCount">0</span>
+    <span class="cap">Appuie ici</span>
+  </button>
+  <p class="feedback" id="fb">Chaque appui doit faire monter le compteur au tableau.</p>
+  <button class="quit" id="btnQuit">Se déconnecter</button>
+</section>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var PREFIX = 'plickerslike-test-';
+  var peer = null, conn = null, seq = 0, mine = 0;
+
+  var $ = function(id){ return document.getElementById(id); };
+
+  function setMsg(txt, kind){
+    $('msg').textContent = txt;
+    $('msg').className = 'msg ' + (kind || '');
+  }
+
+  function show(which){
+    document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+    $(which).classList.add('active');
+  }
+
+  $('codeIn').addEventListener('input', function(){
+    this.value = this.value.replace(/\D/g, '').slice(0, 4);
+  });
+
+  $('codeIn').addEventListener('keydown', function(e){
+    if(e.key === 'Enter') $('btnGo').click();
+  });
+
+  $('btnGo').addEventListener('click', function(){
+    var code = $('codeIn').value.trim();
+    if(code.length !== 4){ setMsg('Il faut les 4 chiffres.', 'err'); return; }
+    connect(code);
+  });
+
+  function connect(code){
+    $('btnGo').disabled = true;
+    setMsg('Connexion au service de jumelage…');
+
+    if(peer){ try{ peer.destroy(); }catch(e){} }
+    peer = new Peer({debug: 1});
+
+    var timeout = setTimeout(function(){
+      if(!conn || !conn.open){
+        setMsg('Aucune réponse après 15 secondes. Vérifie que la page est bien ouverte sur l\'ordinateur et que le code est le bon. Si oui, le réseau bloque probablement la connexion.', 'err');
+        $('btnGo').disabled = false;
+      }
+    }, 15000);
+
+    peer.on('open', function(){
+      setMsg('Recherche du tableau…');
+      conn = peer.connect(PREFIX + code, {reliable: true});
+
+      conn.on('open', function(){
+        clearTimeout(timeout);
+        seq = 0; mine = 0;
+        $('myCount').textContent = '0';
+        $('codeEcho').textContent = code;
+        $('dot').className = 'dot';
+        $('barTxt').innerHTML = 'CONNECTÉ · <span id="codeEcho">' + code + '</span>';
+        show('tap');
+        ping();
+      });
+
+      conn.on('data', function(d){
+        if(!d || !d.t) return;
+        if(d.t === 'ack'){
+          var ms = d.ts ? Date.now() - d.ts : null;
+          $('fb').innerHTML = 'Reçu au tableau : <b>' + d.n + '</b>' + (ms !== null ? ' · ' + ms + ' ms' : '');
+        } else if(d.t === 'pong'){
+          var rt = Date.now() - d.ts;
+          $('fb').textContent = 'Lien établi · ' + rt + ' ms aller-retour';
+        } else if(d.t === 'reset'){
+          mine = 0; seq = 0;
+          $('myCount').textContent = '0';
+          $('fb').textContent = 'Compteur remis à zéro depuis l\'ordinateur.';
+        }
+      });
+
+      conn.on('close', function(){
+        $('dot').className = 'dot off';
+        $('barTxt').textContent = 'LIEN PERDU';
+        $('fb').textContent = 'La connexion est tombée.';
+      });
+
+      conn.on('error', function(e){
+        clearTimeout(timeout);
+        setMsg('Erreur : ' + e, 'err');
+        $('btnGo').disabled = false;
+      });
+    });
+
+    peer.on('error', function(err){
+      clearTimeout(timeout);
+      $('btnGo').disabled = false;
+      show('pair');
+      if(err.type === 'peer-unavailable'){
+        setMsg('Aucun tableau trouvé avec le code ' + code + '. Le code change chaque fois que la page de l\'ordinateur est rechargée — vérifie celui qui est affiché en ce moment.', 'err');
+      } else if(err.type === 'network' || err.type === 'server-error' || err.type === 'socket-error'){
+        setMsg('Impossible de joindre le service de jumelage. Le réseau le bloque, ou le service est en panne. Essaie avec tes données cellulaires pour voir la différence.', 'err');
+      } else {
+        setMsg('Erreur : ' + err.type + ' — ' + (err.message || ''), 'err');
+      }
+    });
+  }
+
+  function ping(){
+    if(conn && conn.open) conn.send({t:'ping', ts:Date.now()});
+  }
+
+  $('btnTap').addEventListener('click', function(){
+    if(!conn || !conn.open){ $('fb').textContent = 'Pas connecté.'; return; }
+    mine++;
+    $('myCount').textContent = mine;
+    conn.send({t:'inc', seq:seq++, ts:Date.now()});
+    if(navigator.vibrate) navigator.vibrate(12);
+  });
+
+  $('btnQuit').addEventListener('click', function(){
+    if(conn){ try{ conn.close(); }catch(e){} }
+    if(peer){ try{ peer.destroy(); }catch(e){} }
+    conn = null;
+    $('btnGo').disabled = false;
+    setMsg('');
+    show('pair');
+  });
+})();
+</script>
+</body>
+</html>
