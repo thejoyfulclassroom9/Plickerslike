@@ -1723,7 +1723,11 @@ AR.Detector.prototype.rotate2 = function (src, rotation) {
     if(angle < 0) angle += 360;
     var rel = (angle - REF_ANGLE + 360) % 360;
     var quadrant = Math.round(rel/90) % 4;
-    var idx = (quadrant + calibOffset) % 4;
+    // Le quadrant croît dans le sens INVERSE de la rotation physique réelle de la carte
+    // (confirmé par mesure directe : B affichait l'angle attendu de D, et vice versa).
+    // On inverse le sens ici plutôt que de retoucher la mise en page des cartes.
+    var canonicalRot = (4 - quadrant) % 4;
+    var idx = (canonicalRot + calibOffset) % 4;
     return {letter: LETTERS[idx], quadrant: quadrant, rawAngle: Math.round(angle)};
   }
 
