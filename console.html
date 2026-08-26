@@ -96,18 +96,19 @@ ul.list li .meta{font-family:var(--mono);font-size:11px;color:var(--muted-2)}
 /* aperçu cartes */
 .preview-shell{background:#0c1013;border:1px solid var(--line);border-radius:var(--radius);padding:16px;max-height:420px;overflow-y:auto}
 .preview{background:#fff;border-radius:4px;padding:12px;display:grid;gap:10px}
-.pcard{position:relative;border:1px dashed #c4c4c4;border-radius:5px;display:grid;place-items:center;aspect-ratio:1/1;padding:5%}
-.pcard .mk{width:90%;height:90%;display:block}
+.pcard{position:relative;border:1px dashed #c4c4c4;border-radius:5px;display:grid;place-items:center;
+  aspect-ratio:1/1;min-width:0;min-height:0;font-size:13px}
+.pcard .mk{width:82%;height:82%;display:block}
 .pcard .mk svg{width:100%;height:100%;display:block}
 .pcard .edge{position:absolute;display:flex;align-items:center;gap:.3em;color:#000;
-  font-family:var(--mono);font-weight:700;font-size:min(4.2vw,17px);line-height:1}
+  font-family:var(--mono);font-weight:700;font-size:1em;line-height:1}
 .pcard .edge svg{width:1em;height:1em;display:block}
-.pcard .edge.N{top:1.5%;left:50%;transform:translateX(-50%)}
-.pcard .edge.E{right:1.5%;top:50%;transform:translateY(-50%) rotate(90deg)}
-.pcard .edge.S{bottom:1.5%;left:50%;transform:translateX(-50%) rotate(180deg)}
-.pcard .edge.W{left:1.5%;top:50%;transform:translateY(-50%) rotate(-90deg)}
-.pcard .num{position:absolute;bottom:2%;right:3.5%;font-family:var(--mono);font-weight:700;
-  font-size:min(5vw,22px);color:#000;line-height:1}
+.pcard .edge.N{top:.6%;left:50%;transform:translateX(-50%)}
+.pcard .edge.E{right:.6%;top:50%;transform:translateY(-50%) rotate(90deg)}
+.pcard .edge.S{bottom:.6%;left:50%;transform:translateX(-50%) rotate(180deg)}
+.pcard .edge.W{left:.6%;top:50%;transform:translateY(-50%) rotate(-90deg)}
+.pcard .num{position:absolute;bottom:1%;right:4%;font-family:var(--mono);font-weight:700;
+  font-size:1.5em;color:#000;line-height:1}
 
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .chip{font-family:var(--mono);font-size:11.5px;padding:4px 9px;border-radius:999px;
@@ -131,12 +132,10 @@ footer.foot{margin-top:30px;color:var(--muted-2);font-size:12px;text-align:cente
   body{background:#fff!important;color:#000!important}
   .wrap,.toast{display:none!important}
   #printArea{display:block!important}
-  .print-page{page-break-after:always;break-after:page;display:grid;gap:5mm;
-    width:100%;height:259mm;grid-auto-rows:1fr}
+  .print-page{page-break-after:always;break-after:page;display:flex;flex-wrap:wrap;gap:6mm;
+    align-content:center;justify-content:center;width:190mm;height:250mm;margin:0 auto;overflow:hidden}
   .print-page:last-child{page-break-after:auto;break-after:auto}
-  .pcard{border:1px dashed #999;border-radius:0;aspect-ratio:auto;height:100%;width:100%}
-  .pcard .edge{font-size:var(--edge-fs,16pt)}
-  .pcard .num{font-size:var(--num-fs,20pt)}
+  .pcard{border:1px dashed #999;border-radius:0;flex:0 0 auto;aspect-ratio:auto}
 
   .roster-page{page-break-after:always}
   .roster-page:last-child{page-break-after:auto}
@@ -234,7 +233,7 @@ Léa Bouchard
           <div class="row" style="margin-top:18px">
             <button class="btn primary" id="btnPrintCards">Imprimer les cartes</button>
           </div>
-          <p class="hint">Dans la fenêtre d'impression, choisis <b>Enregistrer au format PDF</b> comme destination si tu veux le fichier. Pense à décocher « en-têtes et pieds de page » et à imprimer sur du carton si tu en as.</p>
+          <p class="hint">Dans la fenêtre d'impression, choisis <b>Fichier PDF</b> comme destination si tu veux garder le fichier. Laisse les marges sur <b>Par défaut</b> — la mise en page est déjà calculée pour tenir. Inutile de cocher « Graphiques d'arrière-plan » : les marqueurs sont dessinés, pas des images de fond. Imprime sur du carton si tu en as.</p>
         </div>
 
         <div>
@@ -649,26 +648,43 @@ var ARUCO_CODES = [0xd2b63a09d,0x6001134e5,0x1206fbe72,0xff8ad6cb4,0x85da9bc49,0
     return out;
   }
 
+  /* Surface d'impression retenue, en millimètres. Volontairement conservatrice :
+     une feuille Lettre fait 215,9 × 279,4 mm, on garde une marge confortable pour que
+     le résultat tienne quel que soit le réglage de marges choisi dans Chrome. */
+  var PAGE_W = 190, PAGE_H = 250, GAP = 6;
+
   var LAYOUTS = {
-    1: {cols:1, rows:1, edge:'34pt', num:'44pt'},
-    2: {cols:1, rows:2, edge:'24pt', num:'32pt'},
-    4: {cols:2, rows:2, edge:'17pt', num:'22pt'},
-    6: {cols:2, rows:3, edge:'14pt', num:'18pt'},
-    9: {cols:3, rows:3, edge:'11pt', num:'14pt'}
+    1: {cols:1, rows:1},
+    2: {cols:1, rows:2},
+    4: {cols:2, rows:2},
+    6: {cols:2, rows:3},
+    9: {cols:3, rows:3}
   };
+
+  /* Les cartes sont carrées et dimensionnées explicitement. Laisser la grille CSS
+     décider ne fonctionne pas : le marqueur SVG impose un rapport 1:1 qui devient une
+     hauteur minimale incompressible, et les rangées débordent de la page. */
+  function cardSizeMM(perPage){
+    var L = LAYOUTS[perPage];
+    var w = (PAGE_W - GAP * (L.cols - 1)) / L.cols;
+    var h = (PAGE_H - GAP * (L.rows - 1)) / L.rows;
+    return Math.floor(Math.min(w, h) * 10) / 10;
+  }
 
   function renderCardPreview(){
     var nums = parseSelection($('cardSel').value);
     var colored = $('cardColor').checked;
     var perPage = parseInt($('perPage').value, 10);
     var pages = Math.ceil(nums.length / perPage);
+    var size = cardSizeMM(perPage);
     $('cardSummary').textContent = nums.length
-      ? nums.length + ' carte' + (nums.length>1?'s':'') + ' · ' + pages + ' page' + (pages>1?'s':'')
+      ? nums.length + ' carte' + (nums.length>1?'s':'') + ' · ' + pages + ' page' + (pages>1?'s':'') +
+        ' · cartes de ' + size.toString().replace('.', ',') + ' mm de côté'
       : 'Sélection vide';
 
     var box = $('cardPreview');
     box.innerHTML = '';
-    box.style.gridTemplateColumns = 'repeat(' + Math.min(3, LAYOUTS[perPage].cols === 1 ? 2 : LAYOUTS[perPage].cols) + ',1fr)';
+    box.style.gridTemplateColumns = 'repeat(2,1fr)';
     if(!nums.length){
       box.innerHTML = '<div class="empty">Écris une plage comme <b>1-30</b> ou des numéros séparés par des virgules.</div>';
       box.style.gridTemplateColumns = '1fr';
@@ -687,17 +703,21 @@ var ARUCO_CODES = [0xd2b63a09d,0x6001134e5,0x1206fbe72,0xff8ad6cb4,0x85da9bc49,0
     if(!nums.length){ toast('Sélection vide.'); return; }
     var colored = $('cardColor').checked;
     var perPage = parseInt($('perPage').value, 10);
-    var L = LAYOUTS[perPage];
+    var size = cardSizeMM(perPage);
     var area = $('printArea');
     area.innerHTML = '';
     for(var i=0; i<nums.length; i+=perPage){
       var page = document.createElement('div');
       page.className = 'print-page';
-      page.style.gridTemplateColumns = 'repeat(' + L.cols + ',1fr)';
-      page.style.gridTemplateRows = 'repeat(' + L.rows + ',1fr)';
-      page.style.setProperty('--edge-fs', L.edge);
-      page.style.setProperty('--num-fs', L.num);
-      nums.slice(i, i+perPage).forEach(function(n){ page.appendChild(buildCard(n, colored)); });
+      nums.slice(i, i+perPage).forEach(function(n){
+        var card = buildCard(n, colored);
+        card.style.width = size + 'mm';
+        card.style.height = size + 'mm';
+        /* La typographie suit la taille de la carte : les lettres restent lisibles
+           en 1 carte par page comme en 9. */
+        card.style.fontSize = (size / 12) + 'mm';
+        page.appendChild(card);
+      });
       area.appendChild(page);
     }
     window.print();
