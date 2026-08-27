@@ -51,6 +51,8 @@ body{color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiase
 .seg button{flex:1;appearance:none;border:1px solid rgba(237,234,227,.16);background:rgba(24,30,35,.8);
   color:var(--muted);font-family:var(--mono);font-size:12.5px;font-weight:700;padding:11px 0;border-radius:8px;cursor:pointer}
 .seg button.on{background:var(--amber);color:#1a1305;border-color:var(--amber)}
+.seg button.na{opacity:.35}
+.seg button.na::after{content:'';display:none}
 
 input[type=range]{width:100%;accent-color:var(--amber);height:32px}
 
@@ -1362,7 +1364,10 @@ AR.Detector.prototype.rotate2 = function (src, rotation) {
   function start(){
     navigator.mediaDevices.getUserMedia({
       audio:false,
-      video:{ facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080} }
+      /* On demande volontairement très haut : le navigateur accorde le maximum que
+         la caméra sait fournir. Agrandir ensuite un flux plus petit ne crée aucun
+         détail, ça ne fait que ralentir la détection. */
+      video:{ facingMode:{ideal:'environment'}, width:{ideal:3840}, height:{ideal:2160} }
     }).then(function(s){
       stream = s;
       track = s.getVideoTracks()[0];
@@ -1380,10 +1385,27 @@ AR.Detector.prototype.rotate2 = function (src, rotation) {
     });
   }
 
+  var nativeW = 0, nativeH = 0;
+
   function resize(){
-    var vw = video.videoWidth || 1080, vh = video.videoHeight || 1920;
-    cv.width = targetW;
-    cv.height = Math.round(targetW * (vh/vw));
+    nativeW = video.videoWidth || 1080;
+    nativeH = video.videoHeight || 1920;
+    /* Traiter au-delà de la largeur native revient à agrandir : aucun détail gagné,
+       beaucoup de temps perdu. On plafonne. */
+    var w = Math.min(targetW, nativeW);
+    cv.width = w;
+    cv.height = Math.round(w * (nativeH/nativeW));
+    updateResLabel(w);
+  }
+
+  function updateResLabel(effective){
+    var txt = effective + ' px';
+    if(effective < targetW) txt += ' (plafonné)';
+    txt += ' · flux ' + nativeW + '×' + nativeH;
+    $('resLab').textContent = txt;
+    document.querySelectorAll('#resSeg button').forEach(function(b){
+      b.classList.toggle('na', nativeW > 0 && parseInt(b.dataset.w,10) > nativeW);
+    });
   }
 
   function setupZoom(){
@@ -1417,8 +1439,11 @@ AR.Detector.prototype.rotate2 = function (src, rotation) {
     try{ markers = detector.detect(ctx.getImageData(0, 0, cv.width, cv.height)); }catch(e){}
     var ms = Math.round(performance.now() - t0);
 
-    history.push(markers.length > 0);
-    if(history.length > 30) history.shift();
+    /* Fenêtre de 3 secondes, pas de 30 images : sinon une résolution lente accumule
+       un historique de 18 secondes et la comparaison entre réglages est faussée. */
+    var now = Date.now();
+    history.push({t:now, ok: markers.length > 0});
+    while(history.length && now - history[0].t > 3000) history.shift();
 
     markers.forEach(function(m){
       var letter = letterForCorners(m.corners);
@@ -1458,7 +1483,7 @@ AR.Detector.prototype.rotate2 = function (src, rotation) {
   }
 
   function render(ms, n){
-    var hits = history.filter(Boolean).length;
+    var hits = history.filter(function(h){ return h.ok; }).length;
     var pct = history.length ? Math.round(hits/history.length*100) : 0;
     var rel = $('sRel');
     rel.textContent = pct + '%';
@@ -1487,9 +1512,8 @@ AR.Detector.prototype.rotate2 = function (src, rotation) {
     document.querySelectorAll('#resSeg button').forEach(function(x){ x.classList.remove('on'); });
     b.classList.add('on');
     targetW = parseInt(b.dataset.w, 10);
-    $('resLab').textContent = targetW + ' px';
     history = [];
-    if(scanning) resize();
+    if(scanning) resize(); else $('resLab').textContent = targetW + ' px';
   });
 
   $('btnReset').addEventListener('click', function(){ seen.clear(); history = []; });
